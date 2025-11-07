@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } from './ui/dialog'
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar'
 import { Link } from 'react-router-dom'
@@ -22,35 +22,46 @@ const CommentDialog = ({ open, setOpen, scopePosts }) => {
   // Normalize navPosts so each entry is a full post object. scopePosts may be an array of post objects
   // or an array of post IDs (e.g. bookmarks). For ID entries we look up the full post in the global `posts`.
   const rawNav = Array.isArray(scopePosts) ? scopePosts : posts;
-  const navPosts = rawNav
-    .map(item => {
-      if (!item) return null;
-      // item is already a post object
-      if (typeof item === 'object' && item._id) return item;
-      // item might be a string id — find corresponding post in global posts
-      if (typeof item === 'string') return posts.find(p => p._id === item) || null;
-      return null;
-    })
-    .filter(Boolean);
-  // Helpers to navigate between posts in the dialog
-  const currentIndex = selectedPost ? navPosts.findIndex(p => p._id === selectedPost._id) : -1;
-  // With wrap-around enabled, arrows should be active when there is more than one post
-  const hasPrev = navPosts.length > 1;
-  const hasNext = navPosts.length > 1;
+  const navPosts = useMemo(() => (
+    rawNav
+      .map(item => {
+        if (!item) return null;
+        if (typeof item === 'object' && item._id) return item;
+        if (typeof item === 'string') {
+          const match = posts.find(p => String(p._id) === String(item));
+          return match || null;
+        }
+        return null;
+      })
+      .filter(Boolean)
+  ), [rawNav, posts]);
+
+  // Track current index within navPosts so navigation stays scoped and stable
+  const [currentIndex, setCurrentIndex] = useState(-1);
+
+  useEffect(() => {
+    if (!selectedPost || !navPosts.length) {
+      setCurrentIndex(-1);
+      return;
+    }
+    const idx = navPosts.findIndex(item => String(item._id) === String(selectedPost._id));
+    setCurrentIndex(idx);
+  }, [selectedPost, navPosts]);
+
+  const canNavigate = navPosts.length > 1 && currentIndex !== -1;
 
   // Circular navigation: move left/right and wrap using modular arithmetic
   const goToAdjacentPost = (direction) => {
     const len = navPosts?.length || 0;
-    if (len === 0 || !selectedPost) return;
-    const idx = navPosts.findIndex(p => p._id === selectedPost._id);
-    if (idx === -1) return;
+    if (len < 2 || currentIndex === -1) return;
     const delta = direction === 'left' ? -1 : 1;
-    const newIdx = (idx + delta + len) % len; // wrap-around
+    const newIdx = (currentIndex + delta + len) % len; // wrap-around
     const newPost = navPosts[newIdx];
     // Update selected post in redux so the rest of the app is in sync
     dispatch(setSelectedPost(newPost));
     // Also update local comment list immediately for snappy UI
     setComment(newPost.comments || []);
+    setCurrentIndex(newIdx);
   }
   useEffect(() => {
     if (selectedPost) {
@@ -82,7 +93,7 @@ const CommentDialog = ({ open, setOpen, scopePosts }) => {
 
     window.addEventListener('keydown', keyHandler);
     return () => window.removeEventListener('keydown', keyHandler);
-  }, [open, selectedPost, navPosts.length]);
+  }, [open, currentIndex, navPosts.length]);
 
   const changeEventHandler = (e) => {
     const inputText = e.target.value;
@@ -146,7 +157,7 @@ const deletePostHandler = async () => {
           <Button
             variant="ghost"
             onClick={() => goToAdjacentPost('left')}
-            disabled={!hasPrev}
+            disabled={!canNavigate}
             className="absolute left-2 top-1/2 -translate-y-1/2 z-10 p-2"
             aria-label="Previous post"
           >
@@ -155,7 +166,7 @@ const deletePostHandler = async () => {
           <Button
             variant="ghost"
             onClick={() => goToAdjacentPost('right')}
-            disabled={!hasNext}
+            disabled={!canNavigate}
             className="absolute right-2 top-1/2 -translate-y-1/2 z-10 p-2"
             aria-label="Next post"
           >

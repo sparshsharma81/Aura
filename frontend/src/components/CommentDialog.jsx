@@ -19,7 +19,19 @@ const CommentDialog = ({ open, setOpen, scopePosts }) => {
  const url = import.meta.env.VITE_URL || 'http://localhost:5000';
  
   // Use scoped posts when provided (e.g. profile view), otherwise fall back to global posts
-  const navPosts = Array.isArray(scopePosts) ? scopePosts : posts;
+  // Normalize navPosts so each entry is a full post object. scopePosts may be an array of post objects
+  // or an array of post IDs (e.g. bookmarks). For ID entries we look up the full post in the global `posts`.
+  const rawNav = Array.isArray(scopePosts) ? scopePosts : posts;
+  const navPosts = rawNav
+    .map(item => {
+      if (!item) return null;
+      // item is already a post object
+      if (typeof item === 'object' && item._id) return item;
+      // item might be a string id — find corresponding post in global posts
+      if (typeof item === 'string') return posts.find(p => p._id === item) || null;
+      return null;
+    })
+    .filter(Boolean);
   // Helpers to navigate between posts in the dialog
   const currentIndex = selectedPost ? navPosts.findIndex(p => p._id === selectedPost._id) : -1;
   // With wrap-around enabled, arrows should be active when there is more than one post
@@ -70,7 +82,7 @@ const CommentDialog = ({ open, setOpen, scopePosts }) => {
 
     window.addEventListener('keydown', keyHandler);
     return () => window.removeEventListener('keydown', keyHandler);
-  }, [open, selectedPost, posts, scopePosts]);
+  }, [open, selectedPost, navPosts.length]);
 
   const changeEventHandler = (e) => {
     const inputText = e.target.value;

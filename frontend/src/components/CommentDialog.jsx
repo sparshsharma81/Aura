@@ -10,7 +10,7 @@ import axios from 'axios'
 import { toast } from 'sonner'
 import { setPosts, setSelectedPost } from '@/redux/postSlice'
 
-const CommentDialog = ({ open, setOpen }) => {
+const CommentDialog = ({ open, setOpen, scopePosts }) => {
   const [text, setText] = useState("");
   const { selectedPost, posts } = useSelector(store => store.post);
   const [comment, setComment] = useState([]);
@@ -18,21 +18,26 @@ const CommentDialog = ({ open, setOpen }) => {
   const dispatch = useDispatch();
  const url = import.meta.env.VITE_URL || 'http://localhost:5000';
  
+  // Use scoped posts when provided (e.g. profile view), otherwise fall back to global posts
+  const navPosts = Array.isArray(scopePosts) ? scopePosts : posts;
   // Helpers to navigate between posts in the dialog
-  const currentIndex = selectedPost ? posts.findIndex(p => p._id === selectedPost._id) : -1;
-  const hasPrev = currentIndex > 0;
-  const hasNext = currentIndex >= 0 && currentIndex < posts.length - 1;
+  const currentIndex = selectedPost ? navPosts.findIndex(p => p._id === selectedPost._id) : -1;
+  // With wrap-around enabled, arrows should be active when there is more than one post
+  const hasPrev = navPosts.length > 1;
+  const hasNext = navPosts.length > 1;
 
+  // Circular navigation: move left/right and wrap using modular arithmetic
   const goToAdjacentPost = (direction) => {
-    if (!posts?.length || !selectedPost) return;
-    const idx = posts.findIndex(p => p._id === selectedPost._id);
+    const len = navPosts?.length || 0;
+    if (len === 0 || !selectedPost) return;
+    const idx = navPosts.findIndex(p => p._id === selectedPost._id);
     if (idx === -1) return;
-    const newIdx = direction === 'left' ? idx - 1 : idx + 1;
-    if (newIdx < 0 || newIdx >= posts.length) return;
-    const newPost = posts[newIdx];
+    const delta = direction === 'left' ? -1 : 1;
+    const newIdx = (idx + delta + len) % len; // wrap-around
+    const newPost = navPosts[newIdx];
     // Update selected post in redux so the rest of the app is in sync
     dispatch(setSelectedPost(newPost));
-    // Also update local comment list immediately
+    // Also update local comment list immediately for snappy UI
     setComment(newPost.comments || []);
   }
   useEffect(() => {
@@ -40,6 +45,32 @@ const CommentDialog = ({ open, setOpen }) => {
       setComment(selectedPost.comments);
     }
   }, [selectedPost]);
+
+  // Keyboard navigation: left/right arrow to navigate when dialog is open
+  useEffect(() => {
+    if (!open) return;
+
+    const keyHandler = (e) => {
+      // ignore if modifiers are pressed
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+      // don't navigate while typing in an input/textarea or contentEditable
+      const active = document.activeElement;
+      const tag = active?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || active?.isContentEditable) return;
+
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        goToAdjacentPost('left');
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        goToAdjacentPost('right');
+      }
+    };
+
+    window.addEventListener('keydown', keyHandler);
+    return () => window.removeEventListener('keydown', keyHandler);
+  }, [open, selectedPost, posts, scopePosts]);
 
   const changeEventHandler = (e) => {
     const inputText = e.target.value;

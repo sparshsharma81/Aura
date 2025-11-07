@@ -2,13 +2,13 @@ import React, { useEffect, useState } from 'react'
 import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } from './ui/dialog'
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar'
 import { Link } from 'react-router-dom'
-import { MoreHorizontal } from 'lucide-react'
+import { MoreHorizontal, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from './ui/button'
 import { useDispatch, useSelector } from 'react-redux'
 import Comment from './Comment'
 import axios from 'axios'
 import { toast } from 'sonner'
-import { setPosts } from '@/redux/postSlice'
+import { setPosts, setSelectedPost } from '@/redux/postSlice'
 
 const CommentDialog = ({ open, setOpen }) => {
   const [text, setText] = useState("");
@@ -17,6 +17,24 @@ const CommentDialog = ({ open, setOpen }) => {
    const { user } = useSelector(store => store.auth);
   const dispatch = useDispatch();
  const url = import.meta.env.VITE_URL || 'http://localhost:5000';
+ 
+  // Helpers to navigate between posts in the dialog
+  const currentIndex = selectedPost ? posts.findIndex(p => p._id === selectedPost._id) : -1;
+  const hasPrev = currentIndex > 0;
+  const hasNext = currentIndex >= 0 && currentIndex < posts.length - 1;
+
+  const goToAdjacentPost = (direction) => {
+    if (!posts?.length || !selectedPost) return;
+    const idx = posts.findIndex(p => p._id === selectedPost._id);
+    if (idx === -1) return;
+    const newIdx = direction === 'left' ? idx - 1 : idx + 1;
+    if (newIdx < 0 || newIdx >= posts.length) return;
+    const newPost = posts[newIdx];
+    // Update selected post in redux so the rest of the app is in sync
+    dispatch(setSelectedPost(newPost));
+    // Also update local comment list immediately
+    setComment(newPost.comments || []);
+  }
   useEffect(() => {
     if (selectedPost) {
       setComment(selectedPost.comments);
@@ -80,7 +98,26 @@ const deletePostHandler = async () => {
         <DialogTitle className="sr-only">Post comments</DialogTitle>
         <DialogDescription className="sr-only">View and add comments to the post</DialogDescription>
         {/* this oniniteractoutside is a method which prevent clicking outside */}
-        <div className='flex flex-1'>
+        <div className='flex flex-1 relative'>
+          {/* Left / Right navigation buttons */}
+          <Button
+            variant="ghost"
+            onClick={() => goToAdjacentPost('left')}
+            disabled={!hasPrev}
+            className="absolute left-2 top-1/2 -translate-y-1/2 z-10 p-2"
+            aria-label="Previous post"
+          >
+            <ChevronLeft />
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={() => goToAdjacentPost('right')}
+            disabled={!hasNext}
+            className="absolute right-2 top-1/2 -translate-y-1/2 z-10 p-2"
+            aria-label="Next post"
+          >
+            <ChevronRight />
+          </Button>
           <div className='w-1/2'>
             <img
               src={selectedPost?.image}

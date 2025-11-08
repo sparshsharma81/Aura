@@ -148,7 +148,7 @@ const deletePostHandler = async () => {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="max-w-5xl p-0.5 transform scale-160 flex flex-col">
+      <DialogContent className="max-w-5xl p-0.5 transform scale-180 flex flex-col">
         <DialogTitle className="sr-only">Post comments</DialogTitle>
         <DialogDescription className="sr-only">View and add comments to the post</DialogDescription>
         {/* this oniniteractoutside is a method which prevent clicking outside */}

@@ -273,6 +273,15 @@ npm start
 - Participant management
 - Message history
 
+
+# Class Diagram
+
+<p align="center">
+  <img src="docs/1.png" alt="Class Diagram" width="600">
+</p>
+
+
+ 
 ## 🤝 Contributing
 
 1. Fork the repository

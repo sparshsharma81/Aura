@@ -281,6 +281,13 @@ npm start
 </p>
 
 
+# Context Diagram
+
+<p align="center">
+  <img src="docs/2.png" alt="Context Diagram" width="600">
+</p>
+
+
  
 ## 🤝 Contributing
 

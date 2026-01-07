@@ -287,6 +287,12 @@ npm start
   <img src="docs/2.png" alt="Context Diagram" width="600">
 </p>
 
+# Database design
+
+<p align="center">
+  <img src="docs/3.png" alt="Database Design" width="600">
+</p>
+
 
  
 ## 🤝 Contributing

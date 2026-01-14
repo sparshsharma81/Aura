@@ -293,6 +293,14 @@ npm start
   <img src="docs/3.png" alt="Database Design" width="600">
 </p>
 
+# Backend Service Diagram
+
+<p align="center">
+  <img src="docs/Backend Service Diagram (Api + Real time storage).png" alt="Backend Service Diagram" width="600">
+</p>
+
+
+
 
  
 ## 🤝 Contributing

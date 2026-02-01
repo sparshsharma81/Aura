@@ -299,6 +299,13 @@ npm start
   <img src="docs/Backend Service Diagram (Api + Real time storage).png" alt="Backend Service Diagram" width="600">
 </p>
 
+# Sequence Diagram
+
+<p align="center">
+  <img src="docs/Sequence Diagram (Live Chat).png" alt="Sequence Diagram" width="600">
+</p>
+
+
 
 
 

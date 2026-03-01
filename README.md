@@ -13,6 +13,9 @@
 ![Aura Preview](Aura_video.gif)
 
 
+Built Aura, a healthcare dashboard handling 500+ concurrent users with 99.9% uptime.
+
+
 ## ✨ Features
 
 ### 🔐 Authentication & Security
